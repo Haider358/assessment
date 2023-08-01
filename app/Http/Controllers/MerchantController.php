@@ -22,6 +22,15 @@ class MerchantController extends Controller
      */
     public function orderStats(Request $request): JsonResponse
     {
-        // TODO: Complete this method
+        $fromDate = Carbon::parse($request->input('from'));
+        $toDate = Carbon::parse($request->input('to'));
+        $orderCount = Order::whereBetween('created_at', [$fromDate, $toDate])->count();
+        $revenue = Order::whereBetween('created_at', [$fromDate, $toDate])->sum('subtotal_price');
+        $commission = Order::where('payout_status', 'paid')->sum('subtotal_price * affiliate.commission_rate');
+        return response()->json([
+            'count' => $orderCount,
+            'commission_owed' => $commission,
+            'revenue' => $revenue,
+        ]);
     }
 }

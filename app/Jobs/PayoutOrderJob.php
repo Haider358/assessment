@@ -33,6 +33,20 @@ class PayoutOrderJob implements ShouldQueue
      */
     public function handle(ApiService $apiService)
     {
-        // TODO: Complete this method
+        try {
+            $payoutAmount = $this->paymentCalculate($this->order->subtotal_price);
+            $apiService->sendPayout($this->order->affiliate->user->email, $payoutAmount);
+            DB::beginTransaction();
+            $this->order->update(['payout_status' => 'paid']);
+            DB::commit();
+        } catch (PayoutException $e) {
+            DB::rollBack();
+        }
     }
+    protected function paymentCalculate(float $subtotal): float
+    {
+        $commissionRate = $this->order->affiliate->commission_rate;
+        return $subtotal * $commissionRate;
+    }
+
 }
